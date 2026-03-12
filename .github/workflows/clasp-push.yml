@@ -8,7 +8,6 @@ on:
       - 'Code.gs'
       - 'Sidebar.html'
       - 'appsscript.json'
-      - 'package.json'
       - '.github/workflows/clasp-push.yml'
   workflow_dispatch:
 
@@ -43,19 +42,13 @@ jobs:
       - name: Lint before deploy
         run: npm test
 
-      - name: Validate deployment secrets
+      - name: Write clasp credentials
         env:
           CLASP_CREDENTIALS_JSON: ${{ secrets.CLASP_CREDENTIALS_JSON }}
           CLASP_SCRIPT_ID: ${{ secrets.CLASP_SCRIPT_ID }}
         run: |
           test -n "$CLASP_CREDENTIALS_JSON"
           test -n "$CLASP_SCRIPT_ID"
-
-      - name: Write clasp credentials
-        env:
-          CLASP_CREDENTIALS_JSON: ${{ secrets.CLASP_CREDENTIALS_JSON }}
-          CLASP_SCRIPT_ID: ${{ secrets.CLASP_SCRIPT_ID }}
-        run: |
           printf '%s' "$CLASP_CREDENTIALS_JSON" > "$HOME/.clasprc.json"
           printf '{\n  "scriptId": "%s",\n  "rootDir": "."\n}\n' "$CLASP_SCRIPT_ID" > .clasp.json
 
