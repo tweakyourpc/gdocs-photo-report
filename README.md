@@ -80,7 +80,7 @@ If you want repo-level defaults for your own hosted copy, you can also set:
 - `PHOTO_REPORT_CONFIG.defaultPickerDeveloperKey`
 - `PHOTO_REPORT_CONFIG.defaultPickerCloudProjectNumber`
 
-in [Code.gs](./Code.gs).
+in [Code.gs](Code.gs).
 
 ### Manual Folder Mode
 
@@ -105,9 +105,9 @@ Apps Script can read the literal text `1 - Front view of house`, but it does not
 
 1. Create or open the Google Doc you use for reports.
 2. Open `Extensions` > `Apps Script`.
-3. Replace the default script contents with [Code.gs](./Code.gs).
-4. Add [Sidebar.html](./Sidebar.html) as an HTML file in the Apps Script editor.
-5. Replace the manifest with [appsscript.json](./appsscript.json).
+3. Replace the default script contents with [Code.gs](Code.gs).
+4. Add [Sidebar.html](Sidebar.html) as an HTML file in the Apps Script editor.
+5. Replace the manifest with [appsscript.json](appsscript.json).
 6. Save the Apps Script project and reload the Google Doc.
 7. Open `Photo Report` > `Open Sidebar`.
 8. Save a folder with either the Picker UI or the manual folder field.
@@ -138,11 +138,11 @@ The sidebar links directly to the diagnostic log so the operator can inspect or 
 
 The repo includes:
 
-- [eslint.config.mjs](./eslint.config.mjs) with Google JavaScript style enforcement for `Code.gs`
-- [lint.yml](./.github/workflows/lint.yml) for GitHub Actions linting on pushes and pull requests
-- [clasp-push.yml](./.github/workflows/clasp-push.yml) for production deployment on `main`
+- [eslint.config.mjs](eslint.config.mjs) with Google JavaScript style enforcement for `Code.gs`
+- [lint.yml](.github/workflows/lint.yml) for GitHub Actions linting on pushes and pull requests
+- [clasp-push.yml](.github/workflows/clasp-push.yml) for production deployment on `main`
 - GitHub issue templates for bug reports and feature requests
-- an OpenGraph art brief in [docs/og-image-brief.md](./docs/og-image-brief.md)
+- an OpenGraph art brief in [docs/og-image-brief.md](docs/og-image-brief.md)
 
 ### Local Tooling
 
@@ -162,10 +162,10 @@ The workflow writes an ephemeral `.clasp.json` during CI and pushes the Apps Scr
 
 ## Repository Layout
 
-- [Code.gs](./Code.gs): Apps Script runtime, batching engine, diagnostics, and Drive matching logic
-- [Sidebar.html](./Sidebar.html): sidebar UI, progress updates, picker launcher, and resume controls
-- [appsscript.json](./appsscript.json): Apps Script manifest and OAuth scopes
-- [LICENSE](./LICENSE): MIT license
+- [Code.gs](Code.gs): Apps Script runtime, batching engine, diagnostics, and Drive matching logic
+- [Sidebar.html](Sidebar.html): sidebar UI, progress updates, picker launcher, and resume controls
+- [appsscript.json](appsscript.json): Apps Script manifest and OAuth scopes
+- [LICENSE](LICENSE): MIT license
 
 ## Limits and Notes
 
