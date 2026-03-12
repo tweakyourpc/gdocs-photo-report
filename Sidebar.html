@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Photo Report Sidebar</title>
+    <style>
+      :root {
+        --bg: #0b1220;
+        --panel: rgba(15, 23, 42, 0.92);
+        --panel-strong: rgba(17, 24, 39, 0.96);
+        --panel-soft: rgba(30, 41, 59, 0.84);
+        --border: rgba(148, 163, 184, 0.2);
+        --text: #e5eefb;
+        --text-muted: #94a3b8;
+        --accent: #22c55e;
+        --accent-strong: #16a34a;
+        --accent-soft: rgba(34, 197, 94, 0.16);
+        --info: #38bdf8;
+        --warn: #f59e0b;
+        --danger: #fb7185;
+        --shadow: 0 24px 44px rgba(2, 6, 23, 0.46);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Google Sans", Roboto, Arial, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top, rgba(34, 197, 94, 0.18), transparent 30%),
+          radial-gradient(circle at bottom left, rgba(56, 189, 248, 0.16), transparent 26%),
+          linear-gradient(180deg, #09101d 0%, #101826 100%);
+      }
+
+      a {
+        color: #7dd3fc;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .shell {
+        padding: 18px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 14px;
+      }
+
+      .hero {
+        padding: 18px;
+        border: 1px solid rgba(34, 197, 94, 0.18);
+        border-radius: 22px;
+        background:
+          linear-gradient(145deg, rgba(22, 163, 74, 0.16), rgba(15, 23, 42, 0.3)),
+          var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(34, 197, 94, 0.15);
+        color: #bbf7d0;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 14px 0 8px;
+        font-size: 24px;
+        line-height: 1.1;
+      }
+
+      p {
+        margin: 0;
+        color: var(--text-muted);
+        line-height: 1.55;
+      }
+
+      .panel {
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .panel h2 {
+        margin: 0 0 12px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: #cbd5e1;
+      }
+
+      .panel p + p {
+        margin-top: 8px;
+      }
+
+      .row {
+        display: flex;
+        gap: 10px;
+      }
+
+      .row > * {
+        flex: 1 1 auto;
+      }
+
+      .folder-card {
+        display: grid;
+        gap: 8px;
+      }
+
+      .folder-name {
+        font-weight: 700;
+        font-size: 15px;
+      }
+
+      .folder-meta {
+        color: var(--text-muted);
+        font-size: 12px;
+        word-break: break-all;
+      }
+
+      .pill-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.12);
+        color: #dbeafe;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .pill.good {
+        background: rgba(34, 197, 94, 0.18);
+        color: #bbf7d0;
+      }
+
+      .pill.warn {
+        background: rgba(245, 158, 11, 0.16);
+        color: #fcd34d;
+      }
+
+      .pill.info {
+        background: rgba(56, 189, 248, 0.18);
+        color: #bae6fd;
+      }
+
+      .controls {
+        display: grid;
+        gap: 10px;
+      }
+
+      .control-input {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.7);
+        color: var(--text);
+      }
+
+      .control-input::placeholder {
+        color: #64748b;
+      }
+
+      .button-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .button {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        padding: 11px 16px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+      }
+
+      .button:hover:not(:disabled) {
+        transform: translateY(-1px);
+      }
+
+      .button:disabled {
+        opacity: 0.55;
+        cursor: wait;
+        transform: none;
+      }
+
+      .button.primary {
+        color: #052e16;
+        background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+        box-shadow: 0 18px 30px rgba(34, 197, 94, 0.24);
+      }
+
+      .button.secondary {
+        color: #e2e8f0;
+        background: rgba(30, 41, 59, 0.86);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+      }
+
+      .button.info {
+        color: #082f49;
+        background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 100%);
+        box-shadow: 0 16px 28px rgba(56, 189, 248, 0.22);
+      }
+
+      .button.warn {
+        color: #422006;
+        background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
+        box-shadow: 0 16px 28px rgba(245, 158, 11, 0.24);
+      }
+
+      .button.ghost {
+        color: #cbd5e1;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+      }
+
+      .progress-shell {
+        display: grid;
+        gap: 10px;
+      }
+
+      .progress-bar {
+        position: relative;
+        height: 14px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(148, 163, 184, 0.12);
+      }
+
+      .progress-fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 0%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #22c55e 0%, #67e8f9 100%);
+        box-shadow: 0 12px 28px rgba(34, 197, 94, 0.3);
+        transition: width 240ms ease;
+      }
+
+      .progress-fill.indeterminate {
+        width: 38%;
+        background: linear-gradient(90deg, #38bdf8 0%, #22c55e 100%);
+        animation: slide 1.35s ease-in-out infinite;
+      }
+
+      .progress-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(15, 23, 42, 0.68);
+        border: 1px solid rgba(148, 163, 184, 0.12);
+      }
+
+      .metric-label {
+        display: block;
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .metric-value {
+        display: block;
+        margin-top: 6px;
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      .status-box {
+        padding: 14px;
+        border-radius: 14px;
+        background: rgba(15, 23, 42, 0.78);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+      }
+
+      .status-title {
+        margin-bottom: 6px;
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      .status-message {
+        line-height: 1.6;
+      }
+
+      .status-message.warn {
+        color: #fde68a;
+      }
+
+      .status-message.error {
+        color: #fecdd3;
+      }
+
+      details {
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      summary {
+        padding: 14px 16px;
+        cursor: pointer;
+        list-style: none;
+        font-weight: 700;
+      }
+
+      summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .details-body {
+        padding: 0 16px 16px;
+      }
+
+      .log-list {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--text-muted);
+      }
+
+      .log-list li + li {
+        margin-top: 8px;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      @keyframes slide {
+        0% {
+          transform: translateX(-120%);
+        }
+
+        50% {
+          transform: translateX(115%);
+        }
+
+        100% {
+          transform: translateX(115%);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="stack">
+        <section class="hero">
+          <div class="eyebrow">Engineering Report Automation</div>
+          <h1>Photo Report Control Center</h1>
+          <p>
+            Choose the photo folder, start a batch, and let the sidebar handle progress and resume behavior
+            without sending you back to the menu.
+          </p>
+        </section>
+
+        <section class="panel">
+          <h2>Folder</h2>
+          <div class="folder-card">
+            <div class="folder-name" id="folder-name">No folder selected</div>
+            <div class="folder-meta" id="folder-meta">Choose a Drive folder before starting a run.</div>
+            <div class="pill-row" id="folder-pills"></div>
+          </div>
+          <div class="controls" style="margin-top: 14px;">
+            <div class="button-row">
+              <button class="button info" id="pick-folder-button" type="button">Choose Folder in Drive</button>
+              <button class="button ghost hidden" id="refresh-button" type="button">Refresh Status</button>
+            </div>
+            <input
+              class="control-input"
+              id="manual-folder-input"
+              type="text"
+              placeholder="Paste a Drive folder URL or folder ID if Picker is unavailable"
+            >
+            <div class="button-row">
+              <button class="button secondary" id="save-folder-button" type="button">Save Folder URL or ID</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Run Control</h2>
+          <div class="button-row">
+            <button class="button primary" id="insert-button" type="button">Insert Missing Images</button>
+            <button class="button warn" id="rebuild-button" type="button">Rebuild Images</button>
+          </div>
+          <div class="button-row" style="margin-top: 10px;">
+            <button class="button secondary hidden" id="resume-button" type="button">Resume</button>
+            <button class="button ghost hidden" id="clear-run-button" type="button">Clear Status</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Live Progress</h2>
+          <div class="progress-shell">
+            <div class="progress-bar" aria-hidden="true">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-meta">
+              <span id="progress-label">Ready</span>
+              <span id="progress-percent">0%</span>
+            </div>
+          </div>
+          <div class="metrics" style="margin-top: 14px;">
+            <div class="metric">
+              <span class="metric-label">Processed</span>
+              <span class="metric-value" id="metric-processed">0</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Remaining</span>
+              <span class="metric-value" id="metric-remaining">0</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Inserted</span>
+              <span class="metric-value" id="metric-inserted">0</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Removed</span>
+              <span class="metric-value" id="metric-removed">0</span>
+            </div>
+          </div>
+          <div class="status-box" style="margin-top: 14px;">
+            <div class="status-title">Current status</div>
+            <div class="status-message" id="status-message">
+              Ready to choose a folder and start a report batch.
+            </div>
+          </div>
+          <div class="pill-row" id="run-pills" style="margin-top: 12px;"></div>
+          <div class="button-row hidden" id="diagnostic-row" style="margin-top: 12px;">
+            <a class="button secondary" id="diagnostic-link" target="_blank" rel="noopener noreferrer" href="#">Open Diagnostic Log</a>
+          </div>
+        </section>
+
+        <details>
+          <summary>Picker Settings</summary>
+          <div class="details-body stack">
+            <p>
+              Save a Google Picker API key and Cloud project number to your user profile if you want the visual
+              Drive browser across multiple report documents. If you leave this blank, the sidebar still supports
+              manual folder URL and ID entry.
+            </p>
+            <input
+              class="control-input"
+              id="picker-key-input"
+              type="text"
+              autocomplete="off"
+              placeholder="Google Picker API key"
+            >
+            <input
+              class="control-input"
+              id="picker-project-input"
+              type="text"
+              autocomplete="off"
+              placeholder="Google Cloud project number"
+            >
+            <div class="button-row">
+              <button class="button secondary" id="save-picker-button" type="button">Save Picker Credentials</button>
+              <button class="button ghost" id="clear-picker-button" type="button">Clear My Picker Credentials</button>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>Diagnostics</summary>
+          <div class="details-body stack">
+            <p>
+              If a run fails, the script creates a Google Doc diagnostic log with the file IDs, caption numbers,
+              and error messages that were involved.
+            </p>
+            <ul class="log-list" id="error-list">
+              <li>No current errors.</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <script>
+      const bootstrap = <?!= bootstrapJson ?>;
+      const AUTO_RESUME_DELAY_MS = 2200;
+      const CONTINUE_DELAY_MS = 350;
+
+      let sidebarState = bootstrap;
+      let requestedAction = bootstrap.requestedAction || '';
+      let pickerApiLoaded = false;
+      let pickerApiScriptLoaded = false;
+      let oauthToken = '';
+      let autoResumeTimer = null;
+
+      function initializeSidebar() {
+        bindEvents();
+        render();
+        refreshSidebarState();
+      }
+
+      function bindEvents() {
+        document.getElementById('pick-folder-button').addEventListener('click', chooseFolderWithPicker);
+        document.getElementById('save-folder-button').addEventListener('click', saveFolderInput);
+        document.getElementById('save-picker-button').addEventListener('click', savePickerSettings);
+        document.getElementById('clear-picker-button').addEventListener('click', clearPickerSettings);
+        document.getElementById('insert-button').addEventListener('click', function () {
+          startRun('insert');
+        });
+        document.getElementById('rebuild-button').addEventListener('click', function () {
+          startRun('rebuild');
+        });
+        document.getElementById('resume-button').addEventListener('click', resumeRun);
+        document.getElementById('clear-run-button').addEventListener('click', clearRunStatus);
+        document.getElementById('refresh-button').addEventListener('click', refreshSidebarState);
+      }
+
+      function render() {
+        renderFolder();
+        renderPickerSettings();
+        renderRunState();
+      }
+
+      function renderFolder() {
+        const folder = sidebarState.folder;
+        const folderName = document.getElementById('folder-name');
+        const folderMeta = document.getElementById('folder-meta');
+        const folderPills = document.getElementById('folder-pills');
+
+        folderPills.innerHTML = '';
+
+        if (!folder || !folder.id) {
+          folderName.textContent = 'No folder selected';
+          folderMeta.textContent = 'Choose a Drive folder before starting a run.';
+          appendPill(folderPills, 'Folder required', 'warn');
+        } else {
+          folderName.textContent = folder.name;
+          folderMeta.textContent = folder.id;
+          appendPill(folderPills, folder.invalid ? 'Folder unavailable' : 'Folder ready', folder.invalid ? 'warn' : 'good');
+        }
+
+        const pickerConfigured = Boolean(sidebarState.picker && sidebarState.picker.configured);
+        appendPill(
+          folderPills,
+          pickerConfigured ? 'Picker ready' : 'Manual folder entry active',
+          pickerConfigured ? 'info' : 'warn'
+        );
+      }
+
+      function renderPickerSettings() {
+        const picker = sidebarState.picker || {};
+        const pickerKeyInput = document.getElementById('picker-key-input');
+        const pickerProjectInput = document.getElementById('picker-project-input');
+        const pickFolderButton = document.getElementById('pick-folder-button');
+
+        if (picker.source === 'user') {
+          pickerKeyInput.value = picker.developerKey || '';
+          pickerProjectInput.value = picker.cloudProjectNumber || '';
+        } else if (!picker.hasUserCredentials) {
+          pickerKeyInput.value = '';
+          pickerProjectInput.value = '';
+        }
+
+        pickFolderButton.disabled = false;
+        pickFolderButton.textContent = picker.configured ? 'Choose Folder in Drive' : 'Picker Unavailable - Use Manual Entry';
+      }
+
+      function renderRunState() {
+        const run = sidebarState.run || {};
+        const progressFill = document.getElementById('progress-fill');
+        const progressLabel = document.getElementById('progress-label');
+        const progressPercent = document.getElementById('progress-percent');
+        const statusMessage = document.getElementById('status-message');
+        const runPills = document.getElementById('run-pills');
+        const errorList = document.getElementById('error-list');
+        const resumeButton = document.getElementById('resume-button');
+        const clearRunButton = document.getElementById('clear-run-button');
+        const diagnosticRow = document.getElementById('diagnostic-row');
+        const diagnosticLink = document.getElementById('diagnostic-link');
+
+        document.getElementById('metric-processed').textContent = String(run.processedCount || 0);
+        document.getElementById('metric-remaining').textContent = String(run.remainingCount || 0);
+        document.getElementById('metric-inserted').textContent = String(run.insertedCount || 0);
+        document.getElementById('metric-removed').textContent = String(run.removedCount || 0);
+
+        progressLabel.textContent = buildProgressLabel(run);
+        progressPercent.textContent = String(run.progressPercent || 0) + '%';
+        progressFill.className = 'progress-fill';
+        progressFill.style.width = String(run.progressPercent || 0) + '%';
+
+        if (run.phase === 'remove' && run.status !== 'complete' && run.status !== 'error') {
+          progressFill.className = 'progress-fill indeterminate';
+        }
+
+        statusMessage.textContent = run.message || 'Ready to choose a folder and start a report batch.';
+        statusMessage.className = 'status-message';
+
+        if (run.status === 'error') {
+          statusMessage.classList.add('error');
+        } else if (run.localTone === 'error') {
+          statusMessage.classList.add('error');
+        } else if (run.limitReached || run.localTone === 'warn') {
+          statusMessage.classList.add('warn');
+        }
+
+        runPills.innerHTML = '';
+        appendPill(runPills, run.actionLabel || 'Idle', run.status === 'complete' ? 'good' : 'info');
+
+        if (run.totalCount) {
+          appendPill(runPills, String(run.processedCount || 0) + ' / ' + String(run.totalCount) + ' captions', 'info');
+        }
+
+        if (run.skippedCount) {
+          appendPill(runPills, String(run.skippedCount) + ' skipped', 'info');
+        }
+
+        if (run.missingNumbers && run.missingNumbers.length) {
+          appendPill(runPills, String(run.missingNumbers.length) + ' missing', 'warn');
+        }
+
+        if (run.duplicateFolderNumbers && run.duplicateFolderNumbers.length) {
+          appendPill(runPills, String(run.duplicateFolderNumbers.length) + ' duplicate folder numbers', 'warn');
+        }
+
+        if (run.limitReached) {
+          appendPill(runPills, 'Time limit reached', 'warn');
+        }
+
+        errorList.innerHTML = '';
+        if (run.errors && run.errors.length) {
+          for (const errorMessage of run.errors.slice(0, 8)) {
+            const item = document.createElement('li');
+            item.textContent = errorMessage;
+            errorList.appendChild(item);
+          }
+        } else {
+          const item = document.createElement('li');
+          item.textContent = 'No current errors.';
+          errorList.appendChild(item);
+        }
+
+        resumeButton.classList.toggle('hidden', !run.canResume);
+        clearRunButton.classList.toggle('hidden', run.status === 'idle');
+        diagnosticRow.classList.toggle('hidden', !run.diagnosticLogUrl);
+
+        if (run.diagnosticLogUrl) {
+          diagnosticLink.href = run.diagnosticLogUrl;
+        }
+
+        updateActionButtons(run);
+        maybeContinueRun(run);
+      }
+
+      function updateActionButtons(run) {
+        const folderReady = Boolean(sidebarState.folder && sidebarState.folder.id && !sidebarState.folder.invalid);
+        const isBusy = run.status === 'running';
+        const resumeButton = document.getElementById('resume-button');
+        const clearRunButton = document.getElementById('clear-run-button');
+
+        document.getElementById('insert-button').disabled = !folderReady || isBusy;
+        document.getElementById('rebuild-button').disabled = !folderReady || isBusy;
+        document.getElementById('save-folder-button').disabled = isBusy;
+        document.getElementById('pick-folder-button').disabled = isBusy;
+        document.getElementById('save-picker-button').disabled = isBusy;
+        document.getElementById('clear-picker-button').disabled = isBusy;
+        resumeButton.disabled = isBusy || !run.canResume;
+        clearRunButton.disabled = isBusy;
+        document.getElementById('refresh-button').classList.toggle('hidden', false);
+      }
+
+      function buildProgressLabel(run) {
+        if (run.phase === 'remove' && run.status !== 'complete' && run.status !== 'error') {
+          return 'Clearing old managed images';
+        }
+
+        if (run.totalCount) {
+          return 'Processing ' + String(run.processedCount || 0) + ' of ' + String(run.totalCount);
+        }
+
+        return 'Ready';
+      }
+
+      function appendPill(container, text, tone) {
+        const pill = document.createElement('span');
+        pill.className = 'pill' + (tone ? ' ' + tone : '');
+        pill.textContent = text;
+        container.appendChild(pill);
+      }
+
+      function refreshSidebarState() {
+        google.script.run
+          .withSuccessHandler(function (model) {
+            sidebarState = model;
+            render();
+            maybeStartRequestedAction();
+          })
+          .withFailureHandler(handleServerFailure)
+          .getSidebarState();
+      }
+
+      function maybeStartRequestedAction() {
+        if (!requestedAction) {
+          return;
+        }
+
+        const nextAction = requestedAction;
+        requestedAction = '';
+
+        if (nextAction === 'insert' || nextAction === 'rebuild') {
+          startRun(nextAction);
+        }
+
+        if (nextAction === 'folder') {
+          document.getElementById('manual-folder-input').focus();
+        }
+      }
+
+      function chooseFolderWithPicker() {
+        const picker = sidebarState.picker || {};
+        if (!picker.configured) {
+          setLocalStatus('Google Picker is not configured for this copy yet. Use the manual folder field below or save your Picker credentials first.', 'warn');
+          document.getElementById('manual-folder-input').focus();
+          return;
+        }
+
+        ensurePickerApiLoaded(function () {
+          google.script.run
+            .withSuccessHandler(function (token) {
+              oauthToken = token;
+              openFolderPicker();
+            })
+            .withFailureHandler(handleServerFailure)
+            .getOAuthToken();
+        });
+      }
+
+      function ensurePickerApiLoaded(callback) {
+        if (pickerApiLoaded && typeof callback === 'function') {
+          callback();
+          return;
+        }
+
+        window.__photoReportPickerReady = callback;
+
+        if (pickerApiScriptLoaded) {
+          return;
+        }
+
+        pickerApiScriptLoaded = true;
+
+        window.onPhotoReportGapiLoaded = function () {
+          gapi.load('picker', {
+            callback: function () {
+              pickerApiLoaded = true;
+              if (typeof window.__photoReportPickerReady === 'function') {
+                const readyCallback = window.__photoReportPickerReady;
+                window.__photoReportPickerReady = null;
+                readyCallback();
+              }
+            },
+          });
+        };
+
+        const script = document.createElement('script');
+        script.src = 'https://apis.google.com/js/api.js?onload=onPhotoReportGapiLoaded';
+        script.async = true;
+        script.defer = true;
+        script.onerror = function () {
+          pickerApiScriptLoaded = false;
+          setLocalStatus('Could not load the Google Picker API. Use manual folder entry instead.', 'error');
+        };
+        document.head.appendChild(script);
+      }
+
+      function openFolderPicker() {
+        const picker = sidebarState.picker || {};
+        if (!oauthToken || !picker.developerKey || !picker.cloudProjectNumber) {
+          setLocalStatus('Picker credentials are incomplete. Save valid credentials and try again.', 'error');
+          return;
+        }
+
+        const folderView = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+          .setIncludeFolders(true)
+          .setSelectFolderEnabled(true);
+
+        const pickerInstance = new google.picker.PickerBuilder()
+          .addView(folderView)
+          .setOAuthToken(oauthToken)
+          .setDeveloperKey(picker.developerKey)
+          .setAppId(picker.cloudProjectNumber)
+          .setOrigin(google.script.host.origin)
+          .setCallback(function (data) {
+            const action = data[google.picker.Response.ACTION];
+
+            if (action === google.picker.Action.CANCEL) {
+              setLocalStatus('Folder selection canceled.', '');
+              return;
+            }
+
+            if (action !== google.picker.Action.PICKED) {
+              return;
+            }
+
+            const folderData = data[google.picker.Response.DOCUMENTS][0];
+            const folderId = folderData[google.picker.Document.ID];
+
+            google.script.run
+              .withSuccessHandler(function (model) {
+                sidebarState = model;
+                render();
+                setLocalStatus('Folder saved: ' + model.folder.name, '');
+              })
+              .withFailureHandler(handleServerFailure)
+              .handlePickerResponse(folderId);
+          })
+          .build();
+
+        pickerInstance.setVisible(true);
+      }
+
+      function saveFolderInput() {
+        const input = document.getElementById('manual-folder-input').value;
+
+        google.script.run
+          .withSuccessHandler(function (model) {
+            sidebarState = model;
+            document.getElementById('manual-folder-input').value = '';
+            render();
+            setLocalStatus('Folder saved: ' + model.folder.name, '');
+          })
+          .withFailureHandler(handleServerFailure)
+          .saveFolderInput(input);
+      }
+
+      function savePickerSettings() {
+        const apiKey = document.getElementById('picker-key-input').value;
+        const projectNumber = document.getElementById('picker-project-input').value;
+
+        google.script.run
+          .withSuccessHandler(function (pickerState) {
+            sidebarState.picker = pickerState;
+            setLocalStatus('Picker credentials saved to your user profile.', '');
+            renderPickerSettings();
+            renderFolder();
+          })
+          .withFailureHandler(handleServerFailure)
+          .savePickerCredentials(apiKey, projectNumber);
+      }
+
+      function clearPickerSettings() {
+        google.script.run
+          .withSuccessHandler(function (pickerState) {
+            sidebarState.picker = pickerState;
+            document.getElementById('picker-key-input').value = '';
+            document.getElementById('picker-project-input').value = '';
+            setLocalStatus('User-scoped Picker credentials cleared.', '');
+            renderPickerSettings();
+            renderFolder();
+          })
+          .withFailureHandler(handleServerFailure)
+          .clearPickerCredentials();
+      }
+
+      function startRun(action) {
+        clearAutoResumeTimer();
+
+        if (!sidebarState.folder || !sidebarState.folder.id || sidebarState.folder.invalid) {
+          setLocalStatus('Choose a valid Drive folder before starting a run.', 'warn');
+          return;
+        }
+
+        setLocalStatus('Starting ' + actionLabel(action) + '...', '');
+
+        google.script.run
+          .withSuccessHandler(function (runState) {
+            sidebarState.run = runState;
+            renderRunState();
+          })
+          .withFailureHandler(handleServerFailure)
+          .startPhotoReportRun(action);
+      }
+
+      function resumeRun() {
+        clearAutoResumeTimer();
+        setLocalStatus('Resuming the next batch...', '');
+
+        google.script.run
+          .withSuccessHandler(function (runState) {
+            sidebarState.run = runState;
+            renderRunState();
+          })
+          .withFailureHandler(handleServerFailure)
+          .resumePhotoReportRun();
+      }
+
+      function clearRunStatus() {
+        clearAutoResumeTimer();
+
+        google.script.run
+          .withSuccessHandler(function (runState) {
+            sidebarState.run = runState;
+            renderRunState();
+          })
+          .withFailureHandler(handleServerFailure)
+          .clearPhotoReportRun();
+      }
+
+      function maybeContinueRun(run) {
+        clearAutoResumeTimer();
+
+        if (!run || !run.needsContinuation) {
+          return;
+        }
+
+        if (run.limitReached) {
+          const resumeButton = document.getElementById('resume-button');
+          resumeButton.textContent = 'Resume Now';
+
+          autoResumeTimer = window.setTimeout(function () {
+            setLocalStatus('Time limit reached. Resuming automatically...', 'warn');
+            resumeRun();
+          }, AUTO_RESUME_DELAY_MS);
+
+          return;
+        }
+
+        autoResumeTimer = window.setTimeout(function () {
+          resumeRun();
+        }, CONTINUE_DELAY_MS);
+      }
+
+      function clearAutoResumeTimer() {
+        if (!autoResumeTimer) {
+          return;
+        }
+
+        window.clearTimeout(autoResumeTimer);
+        autoResumeTimer = null;
+      }
+
+      function setLocalStatus(message, tone) {
+        const run = Object.assign({}, sidebarState.run || {});
+        run.message = message;
+        run.localTone = tone || '';
+        sidebarState.run = Object.assign(
+          {
+            action: run.action || '',
+            actionLabel: run.actionLabel || '',
+            status: run.status || 'idle',
+            phase: run.phase || 'idle',
+            folderName: run.folderName || '',
+            totalCount: run.totalCount || 0,
+            processedCount: run.processedCount || 0,
+            remainingCount: run.remainingCount || 0,
+            progressPercent: run.progressPercent || 0,
+            insertedCount: run.insertedCount || 0,
+            removedCount: run.removedCount || 0,
+            skippedCount: run.skippedCount || 0,
+            missingNumbers: run.missingNumbers || [],
+            duplicateFolderNumbers: run.duplicateFolderNumbers || [],
+            errors: run.errors || [],
+            limitReached: run.limitReached || false,
+            needsContinuation: run.needsContinuation || false,
+            canResume: run.canResume || false,
+            message: run.message || '',
+            localTone: run.localTone || '',
+            startedAt: run.startedAt || '',
+            updatedAt: run.updatedAt || '',
+            diagnosticLogUrl: run.diagnosticLogUrl || '',
+          },
+          run
+        );
+        renderRunState();
+      }
+
+      function actionLabel(action) {
+        if (action === 'rebuild') {
+          return 'Rebuild Images';
+        }
+
+        return 'Insert Missing Images';
+      }
+
+      function handleServerFailure(error) {
+        const message = error && error.message ? error.message : String(error);
+        clearAutoResumeTimer();
+        setLocalStatus(message, 'error');
+      }
+
+      window.addEventListener('load', initializeSidebar);
+    </script>
+  </body>
+</html>

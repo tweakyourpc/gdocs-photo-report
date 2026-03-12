@@ -1,0 +1,63 @@
+name: Deploy Apps Script
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Code.gs'
+      - 'Sidebar.html'
+      - 'appsscript.json'
+      - 'package.json'
+      - '.github/workflows/clasp-push.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clasp-production
+  cancel-in-progress: false
+
+jobs:
+  push-production:
+    name: Push to Production Apps Script
+    if: github.repository == 'tweakyourpc/gdocs-photo-report'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint before deploy
+        run: npm test
+
+      - name: Validate deployment secrets
+        env:
+          CLASP_CREDENTIALS_JSON: ${{ secrets.CLASP_CREDENTIALS_JSON }}
+          CLASP_SCRIPT_ID: ${{ secrets.CLASP_SCRIPT_ID }}
+        run: |
+          test -n "$CLASP_CREDENTIALS_JSON"
+          test -n "$CLASP_SCRIPT_ID"
+
+      - name: Write clasp credentials
+        env:
+          CLASP_CREDENTIALS_JSON: ${{ secrets.CLASP_CREDENTIALS_JSON }}
+          CLASP_SCRIPT_ID: ${{ secrets.CLASP_SCRIPT_ID }}
+        run: |
+          printf '%s' "$CLASP_CREDENTIALS_JSON" > "$HOME/.clasprc.json"
+          printf '{\n  "scriptId": "%s",\n  "rootDir": "."\n}\n' "$CLASP_SCRIPT_ID" > .clasp.json
+
+      - name: Push Apps Script project
+        run: npm run clasp:push
