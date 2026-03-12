@@ -45,7 +45,7 @@ To use the picker in your own Apps Script project:
 1. Attach the script to a standard Google Cloud project.
 2. Enable the Google Picker API for that Cloud project.
 3. Create a Picker API key restricted to `*.google.com` and `*.googleusercontent.com` referrers.
-4. Update `PHOTO_REPORT_CONFIG.pickerDeveloperKey` and `PHOTO_REPORT_CONFIG.pickerCloudProjectNumber` in [Code.gs](/home/chris/AGENT_HOME/GDOC_AUTOMATIION/Code.gs).
+4. Update `PHOTO_REPORT_CONFIG.pickerDeveloperKey` and `PHOTO_REPORT_CONFIG.pickerCloudProjectNumber` in [Code.gs](./Code.gs).
 
 ## Important input rules
 
@@ -61,8 +61,8 @@ Why plain text instead of an auto-numbered list? Apps Script can reliably read t
 
 1. Create or open the Google Doc you use for reports.
 2. Open `Extensions` > `Apps Script`.
-3. Replace the default script contents with the contents of [Code.gs](/home/chris/AGENT_HOME/GDOC_AUTOMATIION/Code.gs).
-4. Replace the manifest with the contents of [appsscript.json](/home/chris/AGENT_HOME/GDOC_AUTOMATIION/appsscript.json).
+3. Replace the default script contents with the contents of [Code.gs](./Code.gs).
+4. Replace the manifest with the contents of [appsscript.json](./appsscript.json).
 5. Save the Apps Script project.
 6. Reload the Google Doc.
 7. Run `Photo Report` > `Set Image Folder` and choose the Drive folder that holds the project photo staging images.
