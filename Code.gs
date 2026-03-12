@@ -263,7 +263,7 @@ function executePhotoReportBatch_(actionKey, resetRunState) {
       saveProgressSnapshot_(runState);
     }
 
-    const folderImages = collectFolderImages_(folder);
+    const folderImages = collectFolderImages_(folder, runState);
     runState.duplicateFolderNumbers = folderImages.duplicateNumbers;
 
     const captionsDescending = captionScan.entries
@@ -739,21 +739,42 @@ function getBodyChildText_(child) {
   return '';
 }
 
-function collectFolderImages_(folder) {
+function collectFolderImages_(folder, runState) {
   const imageRecords = [];
   const duplicateNumbers = [];
   const iterator = folder.getFiles();
+  let totalFiles = 0;
+  let imageCandidates = 0;
+  let extensionFallbackCount = 0;
+  const matchedSamples = [];
+  const skippedSamples = [];
 
   while (iterator.hasNext()) {
     const file = iterator.next();
+    totalFiles += 1;
 
-    if (!isSupportedImageFile_(file)) {
+    const fileSupport = getSupportedImageInfo_(file);
+    if (!fileSupport.supported) {
+      if (skippedSamples.length < 4) {
+        skippedSamples.push(file.getName() + ' [' + file.getMimeType() + ']');
+      }
       continue;
+    }
+    imageCandidates += 1;
+    if (fileSupport.viaFileName) {
+      extensionFallbackCount += 1;
     }
 
     const number = extractTrailingNumber_(file.getName());
     if (number === null) {
+      if (skippedSamples.length < 4) {
+        skippedSamples.push(file.getName() + ' [no trailing number]');
+      }
       continue;
+    }
+
+    if (matchedSamples.length < 5) {
+      matchedSamples.push(file.getName() + ' -> ' + number);
     }
 
     imageRecords.push({
@@ -785,6 +806,34 @@ function collectFolderImages_(folder) {
     byNumber[record.number] = record;
   }
 
+  if (runState) {
+    appendRunLog_(
+        runState,
+        'Scanning folder "' + folder.getName() + '" (' + folder.getId() + ').',
+    );
+    appendRunLog_(
+        runState,
+        'Folder scan: ' + totalFiles + ' file(s), ' + imageCandidates +
+        ' image candidate(s), ' + imageRecords.length + ' numbered image(s).',
+    );
+
+    if (extensionFallbackCount) {
+      appendRunLog_(
+          runState,
+          'Accepted ' + extensionFallbackCount +
+          ' file(s) by image extension because Drive did not report image/* MIME types.',
+      );
+    }
+
+    if (matchedSamples.length) {
+      appendRunLog_(runState, 'Detected image numbers: ' + matchedSamples.join('; '));
+    }
+
+    if (!imageRecords.length && skippedSamples.length) {
+      appendRunLog_(runState, 'Skipped during folder scan: ' + skippedSamples.join('; '));
+    }
+  }
+
   return {
     byNumber: byNumber,
     duplicateNumbers: uniqueNumbers_(duplicateNumbers),
@@ -792,8 +841,33 @@ function collectFolderImages_(folder) {
 }
 
 function isSupportedImageFile_(file) {
+  return getSupportedImageInfo_(file).supported;
+}
+
+function getSupportedImageInfo_(file) {
   const mimeType = file.getMimeType();
-  return /^image\//i.test(mimeType);
+  if (/^image\//i.test(mimeType)) {
+    return {
+      supported: true,
+      viaFileName: false,
+    };
+  }
+
+  if (isLikelyImageByFileName_(file.getName())) {
+    return {
+      supported: true,
+      viaFileName: true,
+    };
+  }
+
+  return {
+    supported: false,
+    viaFileName: false,
+  };
+}
+
+function isLikelyImageByFileName_(fileName) {
+  return /\.(avif|bmp|gif|heic|heif|jpe?g|png|tiff?|webp)$/i.test(String(fileName || ''));
 }
 
 function isPreferredImageName_(fileName, number) {
