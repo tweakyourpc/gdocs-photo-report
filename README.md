@@ -16,6 +16,16 @@ This project solves a simple but expensive reporting problem:
 
 Photo Report scans the document, matches caption numbers to image numbers, inserts the image above the matching caption, and keeps the workflow safe to rerun.
 
+## Quickstart
+
+1. Open your Google Doc and attach this Apps Script project.
+2. Add [Code.gs](Code.gs), [Sidebar.html](Sidebar.html), [Picker.html](Picker.html), and [appsscript.json](appsscript.json).
+3. Reload the document, then use `Photo Report` > `Set Image Folder` to choose the Drive folder that contains your numbered images.
+4. Type captions as plain text lines such as `12 - Roof flashing at east elevation`.
+5. Open `Photo Report` > `Open Sidebar`, then run `Insert Missing Images`.
+
+If the run pauses because of Apps Script time limits, click `RESUME` in the sidebar and continue from the same UI.
+
 ## Features
 
 - Live Progress Sidebar: run the tool from a persistent Google Docs sidebar with visible progress, counters, status messages, and batch resume controls.
@@ -26,6 +36,14 @@ Photo Report scans the document, matches caption numbers to image numbers, inser
 - Idempotent Image Markers: inserted images are tracked through alt text markers so repeated runs skip work that is already complete.
 - Deterministic Matching: duplicate image-number collisions are resolved consistently and reported.
 - Diagnostic Logs: if a run fails, the script creates a Google Doc log with the relevant caption numbers, file IDs, and error details.
+
+## Screenshots
+
+Replace these placeholder graphics with real captures when you publish polished product shots.
+
+![Sidebar progress placeholder](docs/screenshots/sidebar-progress-placeholder.svg)
+
+![Picker dialog placeholder](docs/screenshots/picker-dialog-placeholder.svg)
 
 ## How It Works
 
@@ -102,6 +120,15 @@ The script validates and stores the folder for the current document.
 
 Apps Script can read the literal text `1 - Front view of house`, but it does not reliably expose rendered list numbering from Google Docs auto-numbered lists.
 
+## Naming Conventions And Gotchas
+
+- The script uses the last number in each filename, so `Site Visit 2026-03-12 Image 7.jpg` will match caption `7`, not `12`.
+- If your team includes dates or revision numbers in filenames, prefer explicit names like `Image 7.jpg` or `Photo 7 - Roof.jpg`.
+- Duplicate caption numbers stop the run before any changes are made.
+- Duplicate folder numbers do not stop the run, but the script chooses one match deterministically and reports the collision.
+- Captions inside tables, headers, footers, and footnotes are not scanned.
+- Diagnostic logs are created as standalone Google Docs so they can be reviewed or shared separately from the report.
+
 ## Setup
 
 1. Create or open the Google Doc you use for reports.
@@ -133,6 +160,14 @@ When a run fails, the script creates a temporary Google Doc that records:
 - the exact Drive file IDs and file names tied to insertion errors
 
 The sidebar links directly to the diagnostic log so the operator can inspect or share it.
+
+## OAuth Scopes
+
+The manifest intentionally stays small:
+
+- `https://www.googleapis.com/auth/documents`: required to read the active report, insert images, and create diagnostic docs.
+- `https://www.googleapis.com/auth/drive.readonly`: required to browse the source folder, inspect image files, and fetch image blobs without requesting write access to Drive.
+- `https://www.googleapis.com/auth/script.container.ui`: required for the Google Docs menu, sidebar, and Picker dialog UI.
 
 ## Development
 
@@ -166,6 +201,7 @@ The workflow writes an ephemeral `.clasp.json` during CI and pushes the Apps Scr
 - [Sidebar.html](Sidebar.html): sidebar UI, progress updates, console log, and resume controls
 - [Picker.html](Picker.html): Google Picker dialog for native Drive folder selection
 - [appsscript.json](appsscript.json): Apps Script manifest and OAuth scopes
+- [CHANGELOG.md](CHANGELOG.md): release notes and notable project changes
 - [LICENSE](LICENSE): MIT license
 
 ## Limits and Notes

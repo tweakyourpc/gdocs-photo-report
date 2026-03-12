@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Picker Dialog Placeholder</title>
+  <desc id="desc">Placeholder illustration for the Photo Report folder picker screenshot.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#09101c" />
+      <stop offset="100%" stop-color="#101826" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#bg)" />
+  <rect x="230" y="100" width="740" height="520" rx="28" fill="#10192b" stroke="#233245" />
+  <text x="280" y="170" fill="#e5eefb" font-family="Arial, sans-serif" font-size="36" font-weight="700">
+    Picker Dialog Placeholder
+  </text>
+  <text x="280" y="210" fill="#94a3b8" font-family="Arial, sans-serif" font-size="20">
+    Replace with a screenshot of the Google Drive folder picker selecting the report photo folder.
+  </text>
+  <rect x="280" y="260" width="640" height="70" rx="16" fill="#0b1220" stroke="#233245" />
+  <text x="320" y="305" fill="#7dd3fc" font-family="Arial, sans-serif" font-size="24" font-weight="700">
+    Project 214 - Site Photos
+  </text>
+  <rect x="280" y="370" width="640" height="170" rx="22" fill="#07111f" stroke="#233245" />
+  <rect x="320" y="414" width="560" height="24" rx="12" fill="#1f2b3d" />
+  <rect x="320" y="456" width="420" height="24" rx="12" fill="#1f2b3d" />
+  <rect x="320" y="498" width="510" height="24" rx="12" fill="#1f2b3d" />
+  <rect x="280" y="566" width="250" height="34" rx="17" fill="#38bdf8" />
+  <text x="340" y="590" fill="#082f49" font-family="Arial, sans-serif" font-size="18" font-weight="700">
+    Open Drive Folder Picker
+  </text>
