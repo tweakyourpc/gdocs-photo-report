@@ -22,6 +22,11 @@ function onOpen() {
 }
 
 function showPicker() {
+  if (!isPickerConfigured_()) {
+    setImageFolderPrompt_();
+    return;
+  }
+
   const pickerConfig = getPickerConfig_();
   const template = HtmlService.createTemplateFromFile('Picker');
   template.pickerDeveloperKey = pickerConfig.developerKey;
@@ -44,22 +49,41 @@ function handlePickerResponse(id) {
     throw new Error('No Drive folder was selected.');
   }
 
-  let folder;
-  try {
-    folder = DriveApp.getFolderById(String(id));
-  } catch (error) {
-    throw new Error('The selected Drive folder could not be opened.');
-  }
-
-  PropertiesService.getDocumentProperties().setProperty(
-    PHOTO_REPORT_CONFIG.folderPropertyKey,
-    folder.getId()
-  );
+  const folder = saveConfiguredFolderById_(String(id), 'The selected Drive folder could not be opened.');
 
   return {
     id: folder.getId(),
     name: folder.getName(),
   };
+}
+
+function setImageFolderPrompt_() {
+  const ui = DocumentApp.getUi();
+  const response = ui.prompt(
+    'Set Google Drive folder',
+    'Google Picker is not configured for this copy of the script yet. Paste the Drive folder URL or folder ID that holds Image 1, Image 2, etc.',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() !== ui.Button.OK) {
+    return;
+  }
+
+  try {
+    const folderId = extractDriveFolderId_(response.getResponseText());
+    const folder = saveConfiguredFolderById_(
+      folderId,
+      'Could not save that Drive folder. Make sure the folder URL or ID is valid and accessible.'
+    );
+
+    ui.alert(
+      'Folder saved',
+      'Using "' + folder.getName() + '" for future photo imports in this document.',
+      ui.ButtonSet.OK
+    );
+  } catch (error) {
+    ui.alert('Could not save folder.\n\n' + error.message);
+  }
 }
 
 function insertMissingImages() {
@@ -442,24 +466,58 @@ function getConfiguredFolder_() {
 }
 
 function getPickerConfig_() {
-  const developerKey = PHOTO_REPORT_CONFIG.pickerDeveloperKey;
-  const cloudProjectNumber = PHOTO_REPORT_CONFIG.pickerCloudProjectNumber;
+  return {
+    developerKey: PHOTO_REPORT_CONFIG.pickerDeveloperKey,
+    cloudProjectNumber: PHOTO_REPORT_CONFIG.pickerCloudProjectNumber,
+  };
+}
 
-  if (
-    !developerKey ||
-    developerKey === 'REPLACE_WITH_PICKER_API_KEY' ||
-    !cloudProjectNumber ||
-    cloudProjectNumber === 'REPLACE_WITH_CLOUD_PROJECT_NUMBER'
-  ) {
-    throw new Error(
-      'Google Picker is not configured yet. Update PHOTO_REPORT_CONFIG with your Picker API key and Cloud project number before using Set Image Folder.'
-    );
+function isPickerConfigured_() {
+  return Boolean(
+    PHOTO_REPORT_CONFIG.pickerDeveloperKey &&
+      PHOTO_REPORT_CONFIG.pickerDeveloperKey !== 'REPLACE_WITH_PICKER_API_KEY' &&
+      PHOTO_REPORT_CONFIG.pickerCloudProjectNumber &&
+      PHOTO_REPORT_CONFIG.pickerCloudProjectNumber !== 'REPLACE_WITH_CLOUD_PROJECT_NUMBER'
+  );
+}
+
+function saveConfiguredFolderById_(folderId, errorMessage) {
+  let folder;
+  try {
+    folder = DriveApp.getFolderById(folderId);
+  } catch (error) {
+    throw new Error(errorMessage);
   }
 
-  return {
-    developerKey: developerKey,
-    cloudProjectNumber: cloudProjectNumber,
-  };
+  PropertiesService.getDocumentProperties().setProperty(
+    PHOTO_REPORT_CONFIG.folderPropertyKey,
+    folder.getId()
+  );
+
+  return folder;
+}
+
+function extractDriveFolderId_(value) {
+  const input = String(value || '').trim();
+  if (!input) {
+    throw new Error('Paste a Drive folder URL or folder ID.');
+  }
+
+  const folderPathMatch = input.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  if (folderPathMatch) {
+    return folderPathMatch[1];
+  }
+
+  const idParamMatch = input.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (idParamMatch) {
+    return idParamMatch[1];
+  }
+
+  if (/^[a-zA-Z0-9_-]{10,}$/.test(input)) {
+    return input;
+  }
+
+  throw new Error('Could not find a Drive folder ID in that value.');
 }
 
 function uniqueNumbers_(values) {

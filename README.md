@@ -22,6 +22,7 @@ The script is designed to make repeated runs safe:
 ## Features
 
 - Visual Folder Selection: choose the Drive photo folder from a Google Picker dialog instead of pasting IDs or URLs.
+- Manual Fallback: if Picker credentials are not configured in a copied project, `Set Image Folder` falls back to a URL or folder-ID prompt so the script still works.
 - Time-Guarded Batching: long runs stop early with a clear warning so you can run `Insert Missing Images` again before Apps Script times out.
 - Idempotent Image Markers: inserted photos are tagged in alt text so reruns skip work that is already complete.
 - Deterministic File Matching: duplicate image numbers are resolved consistently and reported back in the summary.
@@ -40,12 +41,15 @@ The script resizes wide images to fit the page and centers them.
 
 The `Set Image Folder` action opens a Google Picker dialog inside Google Docs so users can browse Drive folders visually instead of copying a folder ID by hand.
 
+If Picker credentials are not configured for a given copy of the script, the same menu action falls back to a plain prompt that accepts either a Drive folder URL or a folder ID.
+
 To use the picker in your own Apps Script project:
 
 1. Attach the script to a standard Google Cloud project.
 2. Enable the Google Picker API for that Cloud project.
 3. Create a Picker API key restricted to `*.google.com` and `*.googleusercontent.com` referrers.
-4. Update `PHOTO_REPORT_CONFIG.pickerDeveloperKey` and `PHOTO_REPORT_CONFIG.pickerCloudProjectNumber` in [Code.gs](./Code.gs).
+4. Update `PHOTO_REPORT_CONFIG.pickerDeveloperKey` and `PHOTO_REPORT_CONFIG.pickerCloudProjectNumber` in [Code.gs](./Code.gs) if you want the visual picker experience.
+5. If you do not configure Picker credentials, the script will still work by falling back to a manual folder URL or ID prompt.
 
 ## Important input rules
 
