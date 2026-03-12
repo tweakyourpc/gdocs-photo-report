@@ -65,7 +65,7 @@ Why plain text instead of an auto-numbered list? Apps Script can reliably read t
 4. Replace the manifest with the contents of [appsscript.json](/home/chris/AGENT_HOME/GDOC_AUTOMATIION/appsscript.json).
 5. Save the Apps Script project.
 6. Reload the Google Doc.
-7. Run `Photo Report` > `Set Image Folder` and paste the Drive folder URL or ID for the project photo staging folder.
+7. Run `Photo Report` > `Set Image Folder` and choose the Drive folder that holds the project photo staging images.
 8. Author captions in the document as plain text lines such as:
 
 ```text
