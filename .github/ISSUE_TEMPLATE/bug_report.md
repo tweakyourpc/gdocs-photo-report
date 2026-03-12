@@ -16,7 +16,7 @@ What did you expect to happen, and what happened instead?
 
 ## Environment
 
-- Number of photos:
+- Number of Images:
 - Number of caption lines:
 - Approximate document length:
 - Browser:
@@ -35,7 +35,7 @@ What did you expect to happen, and what happened instead?
 - Example image filenames used:
 - Was this an `Insert Missing Images` run or a `Rebuild Images` run?:
 
-## Error Details
+## Error Logs
 
 - Exact error message:
 - Any Apps Script execution log output:

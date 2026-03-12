@@ -2,6 +2,7 @@
 
 const PHOTO_REPORT_CONFIG = Object.freeze({
   folderPropertyKey: 'PHOTO_REPORT_FOLDER_ID',
+  folderNamePropertyKey: 'PHOTO_REPORT_FOLDER_NAME',
   runStatePropertyKey: 'PHOTO_REPORT_RUN_STATE',
   userPickerKeyPropertyKey: 'PHOTO_REPORT_PICKER_API_KEY',
   userPickerProjectPropertyKey: 'PHOTO_REPORT_PICKER_PROJECT_NUMBER',
@@ -16,6 +17,11 @@ const PHOTO_REPORT_CONFIG = Object.freeze({
   defaultPickerDeveloperKey: '',
   defaultPickerCloudProjectNumber: '',
   diagnosticDocPrefix: 'Photo Report Diagnostic Log',
+  pickerDialogWidth: 720,
+  pickerDialogHeight: 560,
+  maxConsoleLines: 24,
+  maxStoredErrors: 24,
+  maxStoredErrorDetails: 12,
 });
 
 const PHOTO_REPORT_ACTIONS = Object.freeze({
@@ -36,7 +42,7 @@ function onOpen() {
       .createMenu(PHOTO_REPORT_CONFIG.sidebarTitle)
       .addItem('Open Sidebar', 'showSidebar')
       .addSeparator()
-      .addItem('Set Image Folder', 'showSidebarForFolderSelection')
+      .addItem('Set Image Folder', 'showPicker')
       .addItem('Insert Missing Images', 'showSidebarForInsertMissingImages')
       .addItem('Rebuild Images', 'showSidebarForRebuildImages')
       .addToUi();
@@ -69,6 +75,23 @@ function showSidebar_(requestedAction) {
   DocumentApp.getUi().showSidebar(html);
 }
 
+function showPicker() {
+  const template = HtmlService.createTemplateFromFile('Picker');
+  template.bootstrapJson = JSON.stringify(buildPickerDialogModel_());
+
+  const html = template.evaluate()
+      .setWidth(PHOTO_REPORT_CONFIG.pickerDialogWidth)
+      .setHeight(PHOTO_REPORT_CONFIG.pickerDialogHeight)
+      .setSandboxMode(HtmlService.SandboxMode.IFRAME);
+
+  DocumentApp.getUi().showModalDialog(html, 'Select Photo Folder');
+}
+
+function openPickerDialog() {
+  showPicker();
+  return true;
+}
+
 function getSidebarState() {
   return buildSidebarModel_('');
 }
@@ -79,6 +102,14 @@ function buildSidebarModel_(requestedAction) {
     folder: getConfiguredFolderInfo_(),
     picker: buildPickerClientState_(),
     run: buildClientRunState_(getStoredRunState_()),
+  };
+}
+
+function buildPickerDialogModel_() {
+  return {
+    folder: getConfiguredFolderInfo_(),
+    picker: buildPickerClientState_(),
+    title: PHOTO_REPORT_CONFIG.sidebarTitle,
   };
 }
 
@@ -96,7 +127,7 @@ function saveFolderInput(input) {
   return buildSidebarModelAfterFolderSave_(folder);
 }
 
-function handlePickerResponse(id) {
+function handlePickerResponse(id, folderName) {
   if (!id) {
     throw new Error('No Drive folder was selected.');
   }
@@ -104,6 +135,7 @@ function handlePickerResponse(id) {
   const folder = saveConfiguredFolderById_(
       String(id),
       'The selected Drive folder could not be opened.',
+      folderName,
   );
 
   return buildSidebarModelAfterFolderSave_(folder);
@@ -200,10 +232,17 @@ function executePhotoReportBatch_(actionKey, resetRunState) {
     runState.needsContinuation = false;
     runState.updatedAt = new Date().toISOString();
     runState.message = buildRunPhaseMessage_(runState);
+    if (resetRunState) {
+      appendRunLog_(runState, action.label + ' started.');
+    } else {
+      appendRunLog_(runState, action.label + ' resumed.');
+    }
+    saveProgressSnapshot_(runState);
 
     if (action.rebuild && !runState.removalComplete) {
-      const removalSummary = removeManagedImageParagraphsBatch_(body, batchLimits);
-      runState.removedCount += removalSummary.removedCount;
+      appendRunLog_(runState, 'Clearing previously managed images before rebuild.');
+      saveProgressSnapshot_(runState);
+      const removalSummary = removeManagedImageParagraphsBatch_(body, batchLimits, runState);
       runState.updatedAt = new Date().toISOString();
 
       if (!removalSummary.complete) {
@@ -219,6 +258,9 @@ function executePhotoReportBatch_(actionKey, resetRunState) {
 
       runState.removalComplete = true;
       runState.phase = 'insert';
+      runState.message = buildRunPhaseMessage_(runState);
+      appendRunLog_(runState, 'Managed image removal complete. Starting insert phase.');
+      saveProgressSnapshot_(runState);
     }
 
     const folderImages = collectFolderImages_(folder);
@@ -249,6 +291,8 @@ function executePhotoReportBatch_(actionKey, resetRunState) {
         );
       }
 
+      runState.message = buildProcessingMessage_(runState);
+      saveProgressSnapshot_(runState);
       processCaptionEntry_(body, captionEntry, folderImages, runState, action);
       processedThisBatch += 1;
     }
@@ -259,6 +303,7 @@ function executePhotoReportBatch_(actionKey, resetRunState) {
     runState.limitReached = false;
     runState.updatedAt = new Date().toISOString();
     runState.message = buildCompletionMessage_(runState);
+    appendRunLog_(runState, 'Batch complete. ' + runState.message);
     saveRunState_(runState);
     return buildClientRunState_(runState);
   } catch (error) {
@@ -299,6 +344,7 @@ function initializeRunState_(runState, action, folder, captionScan, resetRunStat
   nextState.skippedCount = Number(nextState.skippedCount || 0);
   nextState.errors = ensureStringArray_(nextState.errors);
   nextState.errorDetails = ensureObjectArray_(nextState.errorDetails);
+  nextState.consoleLines = ensureRecentStringArray_(nextState.consoleLines);
   nextState.duplicateFolderNumbers = ensureNumberArray_(nextState.duplicateFolderNumbers);
   nextState.removalComplete = Boolean(
       nextState.removalComplete || action.rebuild === false,
@@ -327,6 +373,7 @@ function createRunState_(action, folder, totalCount) {
     skippedCount: 0,
     errors: [],
     errorDetails: [],
+    consoleLines: [],
     limitReached: false,
     needsContinuation: false,
     removalComplete: action.rebuild === false,
@@ -346,6 +393,7 @@ function pauseRunState_(runState, phase, limitReached, message) {
   runState.message = runState.needsContinuation ?
     buildPauseMessage_(runState, message) :
     buildCompletionMessage_(runState);
+  appendRunLog_(runState, runState.message);
 
   if (!runState.needsContinuation) {
     runState.phase = 'complete';
@@ -385,7 +433,9 @@ function processCaptionEntry_(body, captionEntry, folderImages, runState, action
   if (!imageRecord) {
     pushUniqueNumber_(runState.missingNumbers, captionEntry.number);
     pushUniqueNumber_(runState.completedNumbers, captionEntry.number);
-    runState.message = buildProcessingMessage_(runState);
+    runState.message = 'Caption ' + captionEntry.number + ': no matching image found.';
+    appendRunLog_(runState, runState.message);
+    saveProgressSnapshot_(runState);
     return;
   }
 
@@ -395,7 +445,9 @@ function processCaptionEntry_(body, captionEntry, folderImages, runState, action
   ) {
     runState.skippedCount += 1;
     pushUniqueNumber_(runState.completedNumbers, captionEntry.number);
-    runState.message = buildProcessingMessage_(runState);
+    runState.message = 'Caption ' + captionEntry.number + ': existing managed image found, skipped.';
+    appendRunLog_(runState, runState.message);
+    saveProgressSnapshot_(runState);
     return;
   }
 
@@ -407,6 +459,8 @@ function processCaptionEntry_(body, captionEntry, folderImages, runState, action
         imageRecord.file,
     );
     runState.insertedCount += 1;
+    runState.message = 'Caption ' + captionEntry.number + ': inserted ' + imageRecord.file.getName() + '.';
+    appendRunLog_(runState, runState.message);
   } catch (error) {
     const errorDetail = {
       type: 'insert',
@@ -418,10 +472,13 @@ function processCaptionEntry_(body, captionEntry, folderImages, runState, action
 
     runState.errors.push(formatDiagnosticError_(errorDetail));
     runState.errorDetails.push(errorDetail);
+    runState.message = 'Caption ' + captionEntry.number + ': failed to insert ' +
+      imageRecord.file.getName() + '.';
+    appendRunLog_(runState, runState.message + ' ' + formatDiagnosticError_(errorDetail));
   }
 
   pushUniqueNumber_(runState.completedNumbers, captionEntry.number);
-  runState.message = buildProcessingMessage_(runState);
+  saveProgressSnapshot_(runState);
 }
 
 function finalizeRunFailure_(action, runState, error) {
@@ -435,6 +492,7 @@ function finalizeRunFailure_(action, runState, error) {
   nextState.updatedAt = new Date().toISOString();
   nextState.errors = ensureStringArray_(nextState.errors);
   nextState.errorDetails = ensureObjectArray_(nextState.errorDetails);
+  nextState.consoleLines = ensureRecentStringArray_(nextState.consoleLines);
   nextState.errors.push(errorMessage);
   nextState.errorDetails.push({
     type: 'fatal',
@@ -444,6 +502,7 @@ function finalizeRunFailure_(action, runState, error) {
     message: errorMessage,
   });
   nextState.message = 'Run failed. Review the diagnostic log for details.';
+  appendRunLog_(nextState, errorMessage);
   nextState.diagnosticLogUrl = createDiagnosticLogSafely_(nextState);
 
   saveRunState_(nextState);
@@ -470,6 +529,7 @@ function createFallbackRunState_(action) {
     skippedCount: 0,
     errors: [],
     errorDetails: [],
+    consoleLines: [],
     limitReached: false,
     needsContinuation: false,
     removalComplete: action ? action.rebuild === false : true,
@@ -566,7 +626,7 @@ function createDiagnosticLog_(runState) {
   return diagnosticDocument.getUrl();
 }
 
-function removeManagedImageParagraphsBatch_(body, batchLimits) {
+function removeManagedImageParagraphsBatch_(body, batchLimits, runState) {
   let removedCount = 0;
 
   for (let index = body.getNumChildren() - 1; index >= 0; index -= 1) {
@@ -586,6 +646,9 @@ function removeManagedImageParagraphsBatch_(body, batchLimits) {
 
     body.removeChild(child);
     removedCount += 1;
+    runState.removedCount += 1;
+    runState.message = 'Removing previously managed images... ' + removedCount + ' removed this batch.';
+    saveProgressSnapshot_(runState);
   }
 
   return {
@@ -853,8 +916,12 @@ function getConfiguredFolder_() {
 }
 
 function getConfiguredFolderInfo_() {
+  const documentProperties = PropertiesService.getDocumentProperties();
   const folderId = PropertiesService.getDocumentProperties().getProperty(
       PHOTO_REPORT_CONFIG.folderPropertyKey,
+  );
+  const savedFolderName = String(
+      documentProperties.getProperty(PHOTO_REPORT_CONFIG.folderNamePropertyKey) || '',
   );
 
   if (!folderId) {
@@ -866,7 +933,7 @@ function getConfiguredFolderInfo_() {
   } catch (error) {
     return {
       id: folderId,
-      name: 'Configured folder unavailable',
+      name: savedFolderName || 'Configured folder unavailable',
       invalid: true,
     };
   }
@@ -932,7 +999,7 @@ function hasUserPickerCredentials_() {
   );
 }
 
-function saveConfiguredFolderById_(folderId, errorMessage) {
+function saveConfiguredFolderById_(folderId, errorMessage, preferredFolderName) {
   let folder;
   try {
     folder = DriveApp.getFolderById(folderId);
@@ -940,9 +1007,14 @@ function saveConfiguredFolderById_(folderId, errorMessage) {
     throw new Error(errorMessage);
   }
 
-  PropertiesService.getDocumentProperties().setProperty(
+  const documentProperties = PropertiesService.getDocumentProperties();
+  documentProperties.setProperty(
       PHOTO_REPORT_CONFIG.folderPropertyKey,
       folder.getId(),
+  );
+  documentProperties.setProperty(
+      PHOTO_REPORT_CONFIG.folderNamePropertyKey,
+      String(preferredFolderName || folder.getName()),
   );
   clearStoredRunState_();
 
@@ -1007,6 +1079,7 @@ function getStoredRunState_() {
 }
 
 function saveRunState_(runState) {
+  normalizeRunStateForStorage_(runState);
   PropertiesService.getDocumentProperties().setProperty(
       PHOTO_REPORT_CONFIG.runStatePropertyKey,
       JSON.stringify(runState),
@@ -1017,6 +1090,20 @@ function clearStoredRunState_() {
   PropertiesService.getDocumentProperties().deleteProperty(
       PHOTO_REPORT_CONFIG.runStatePropertyKey,
   );
+}
+
+function normalizeRunStateForStorage_(runState) {
+  runState.consoleLines = ensureRecentStringArray_(runState.consoleLines);
+  runState.errors = ensureRecentStringArray_(runState.errors, PHOTO_REPORT_CONFIG.maxStoredErrors);
+  runState.errorDetails = ensureRecentObjectArray_(
+      runState.errorDetails,
+      PHOTO_REPORT_CONFIG.maxStoredErrorDetails,
+  );
+}
+
+function saveProgressSnapshot_(runState) {
+  runState.updatedAt = new Date().toISOString();
+  saveRunState_(runState);
 }
 
 function buildClientRunState_(runState) {
@@ -1037,6 +1124,7 @@ function buildClientRunState_(runState) {
       missingNumbers: [],
       duplicateFolderNumbers: [],
       errors: [],
+      consoleLines: [],
       limitReached: false,
       needsContinuation: false,
       canResume: false,
@@ -1070,6 +1158,7 @@ function buildClientRunState_(runState) {
     missingNumbers: sortedNumberCopy_(runState.missingNumbers),
     duplicateFolderNumbers: sortedNumberCopy_(runState.duplicateFolderNumbers),
     errors: ensureStringArray_(runState.errors),
+    consoleLines: ensureRecentStringArray_(runState.consoleLines),
     limitReached: Boolean(runState.limitReached),
     needsContinuation: Boolean(runState.needsContinuation),
     canResume: Boolean(runState.needsContinuation && runState.limitReached),
@@ -1155,6 +1244,12 @@ function ensureStringArray_(values) {
   });
 }
 
+function ensureRecentStringArray_(values, maxItems) {
+  const limit = Number(maxItems || PHOTO_REPORT_CONFIG.maxConsoleLines);
+  const normalized = ensureStringArray_(values);
+  return normalized.slice(Math.max(normalized.length - limit, 0));
+}
+
 function ensureObjectArray_(values) {
   if (!Array.isArray(values)) {
     return [];
@@ -1163,6 +1258,12 @@ function ensureObjectArray_(values) {
   return values.filter(function(value) {
     return value && typeof value === 'object';
   });
+}
+
+function ensureRecentObjectArray_(values, maxItems) {
+  const normalized = ensureObjectArray_(values);
+  const limit = Number(maxItems || PHOTO_REPORT_CONFIG.maxStoredErrorDetails);
+  return normalized.slice(Math.max(normalized.length - limit, 0));
 }
 
 function filterNumbersToKnownSet_(values, knownNumbers) {
@@ -1185,6 +1286,31 @@ function filterNumbersToKnownSet_(values, knownNumbers) {
 
 function sortedNumberCopy_(values) {
   return sortNumbers_(ensureNumberArray_(values).slice());
+}
+
+function appendRunLog_(runState, message) {
+  const trimmedMessage = String(message || '').trim();
+  if (!trimmedMessage) {
+    return;
+  }
+
+  runState.consoleLines = ensureRecentStringArray_(runState.consoleLines);
+  const timestamp = Utilities.formatDate(
+      new Date(),
+      Session.getScriptTimeZone(),
+      'HH:mm:ss',
+  );
+  const nextLine = '[' + timestamp + '] ' + trimmedMessage;
+  const lastLine = runState.consoleLines.length ?
+    runState.consoleLines[runState.consoleLines.length - 1] :
+    '';
+
+  if (lastLine === nextLine) {
+    return;
+  }
+
+  runState.consoleLines.push(nextLine);
+  runState.consoleLines = ensureRecentStringArray_(runState.consoleLines);
 }
 
 function uniqueNumbers_(values) {

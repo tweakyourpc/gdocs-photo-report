@@ -19,7 +19,7 @@ Photo Report scans the document, matches caption numbers to image numbers, inser
 ## Features
 
 - Live Progress Sidebar: run the tool from a persistent Google Docs sidebar with visible progress, counters, status messages, and batch resume controls.
-- Visual Folder Selection: launch the Google Picker API from the sidebar to browse Drive folders visually.
+- Visual Folder Selection: launch a dedicated Google Picker dialog to browse Drive folders visually.
 - Manual Folder Fallback: if Picker credentials are not configured, the same sidebar still accepts a Drive folder URL or raw folder ID.
 - Time-Guarded Batching: large reports are processed in resumable batches so the script stops cleanly before Apps Script execution limits become destructive.
 - Auto Resume Flow: normal batches continue automatically, and time-limit pauses expose a resume button without sending the user back to the menu.
@@ -30,7 +30,7 @@ Photo Report scans the document, matches caption numbers to image numbers, inser
 ## How It Works
 
 1. Open the sidebar from the `Photo Report` menu in Google Docs.
-2. Choose a Drive folder that contains numbered project photos.
+2. Use `Set Image Folder` or the sidebar picker button to choose the Drive folder that contains numbered project photos.
 3. Write plain-text caption lines in the body of the document, such as:
 
 ```text
@@ -48,7 +48,7 @@ Photo Report scans the document, matches caption numbers to image numbers, inser
 The sidebar is the main control surface for the project.
 
 - `Open Sidebar` opens the persistent control center.
-- `Set Image Folder` opens the same sidebar focused on folder selection.
+- `Set Image Folder` opens a dedicated Google Picker dialog for folder selection.
 - `Insert Missing Images` opens the sidebar and starts an insert run.
 - `Rebuild Images` opens the sidebar and starts a rebuild run.
 
@@ -62,7 +62,7 @@ The progress panel shows:
 
 ## Visual Folder Selection
 
-The sidebar supports two folder-selection modes.
+Folder selection supports two modes.
 
 ### Google Picker Mode
 
@@ -72,6 +72,7 @@ Use this when you want a visual Drive folder browser.
 2. Enable the Google Picker API for that Cloud project.
 3. Create a Picker API key restricted to `*.google.com` and `*.googleusercontent.com`.
 4. Open the sidebar and save the Picker API key plus Cloud project number in the Picker Settings panel.
+5. Use `Photo Report` > `Set Image Folder` or the sidebar picker button to open the native folder picker dialog.
 
 Picker credentials are stored in `UserProperties`, which means one engineer can reuse the same credentials across multiple report documents without committing secrets into the repo.
 
@@ -84,7 +85,7 @@ in [Code.gs](Code.gs).
 
 ### Manual Folder Mode
 
-If Picker is not configured, the sidebar still works.
+If Picker is not configured, the project still works.
 
 - Paste a Drive folder URL, such as `https://drive.google.com/drive/folders/<id>`
 - Or paste a raw folder ID directly
@@ -106,12 +107,11 @@ Apps Script can read the literal text `1 - Front view of house`, but it does not
 1. Create or open the Google Doc you use for reports.
 2. Open `Extensions` > `Apps Script`.
 3. Replace the default script contents with [Code.gs](Code.gs).
-4. Add [Sidebar.html](Sidebar.html) as an HTML file in the Apps Script editor.
+4. Add [Sidebar.html](Sidebar.html) and [Picker.html](Picker.html) as HTML files in the Apps Script editor.
 5. Replace the manifest with [appsscript.json](appsscript.json).
 6. Save the Apps Script project and reload the Google Doc.
-7. Open `Photo Report` > `Open Sidebar`.
-8. Save a folder with either the Picker UI or the manual folder field.
-9. Start `Insert Missing Images` or `Rebuild Images` from the sidebar.
+7. Use `Photo Report` > `Set Image Folder` to open the native folder picker, or open `Photo Report` > `Open Sidebar` and use the manual folder field.
+8. Start `Insert Missing Images` or `Rebuild Images` from the sidebar.
 
 ## Matching Behavior
 
@@ -163,7 +163,8 @@ The workflow writes an ephemeral `.clasp.json` during CI and pushes the Apps Scr
 ## Repository Layout
 
 - [Code.gs](Code.gs): Apps Script runtime, batching engine, diagnostics, and Drive matching logic
-- [Sidebar.html](Sidebar.html): sidebar UI, progress updates, picker launcher, and resume controls
+- [Sidebar.html](Sidebar.html): sidebar UI, progress updates, console log, and resume controls
+- [Picker.html](Picker.html): Google Picker dialog for native Drive folder selection
 - [appsscript.json](appsscript.json): Apps Script manifest and OAuth scopes
 - [LICENSE](LICENSE): MIT license
 
